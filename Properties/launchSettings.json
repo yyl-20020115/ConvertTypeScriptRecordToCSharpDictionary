@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "ConvertTypeScriptRecordToCSharpDictionary": {
+      "commandName": "Project",
+      "commandLineArgs": "input.ts output.cs",
+      "workingDirectory": "$(ProjectDir)"
+    }
+  }
+}
