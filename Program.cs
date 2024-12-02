@@ -11,10 +11,12 @@ internal class Program
             var dictname = DefaultDictionaryName;
             using var reader = new StreamReader(args[0]);
             using var writer = new StreamWriter(args[1]);
+            var line_number = 0;
             string? line;
             writer.WriteLine("public class DictClass{");
             while ((line = reader.ReadLine()) != null)
             {
+                line_number++;
                 line = line.Trim();
                 var result = "";
                 if ((line.StartsWith("export") || line.StartsWith("const")) && (line.EndsWith('{') || line.EndsWith('=') || line.EndsWith('>')))
@@ -32,7 +34,7 @@ internal class Program
                             dictname = DefaultDictionaryName;
                         }
                     }
-                    result = $"public readonly Dictionary<string,string> {dictname} = {{";
+                    result = $"public static readonly Dictionary<string,string> {dictname} = new(){{";
                 }
                 else if (line.Contains(':') && (started || !line.EndsWith('=') && !line.EndsWith('}') && !line.EndsWith('>')))
                 {
@@ -60,30 +62,45 @@ internal class Program
                             if (!failed) break;
                         }
                     }
-                    if (i < 0) continue;
+                    if (i <= 0)
+                    {
+                        i = line.IndexOf(':');
+                        if (i < 0) continue;
+                    }
+
 
                     string[] parts = [line[..i], line[(i + 1)..]];
 
                     for (i = 0; i < parts.Length; i++)
                     {
-                        var p = parts[i].Trim();
+                        var p = new string(parts[i].Trim());
                         if (p.Length > 0)
                         {
                             if (p.StartsWith('"') && p.EndsWith('\"'))
                             {
                                 //如果双引号开头结尾，里面的单引号都要加"\\"
-                                parts[i] = p.Replace("\'", "\\'");
+                                parts[i] = $"\"{p[1..^1].Replace("\'", "\\\'")}\"";
+                                continue;
                             }
                             else if (p.StartsWith('\'') && p.EndsWith('\''))
                             {
                                 //如果单引号开头结尾，替换为双引号
-                                parts[i] = $"\"{p[1..^1]}\"";
+                                parts[i] = $"\"{p[1..^1].Replace("\"", "\\\"")}\"";
+                                continue;
                             }
-                            if (!p.StartsWith('\'')) parts[i] = "\"" + p;
-                            if (!p.EndsWith('\'')) parts[i] += "\"";
+                            if (!parts[i].StartsWith('\'') || !parts[i].StartsWith('"')) parts[i] = "\"" + p;
+                            if (!parts[i].EndsWith('\'') || !parts[i].EndsWith('"')) parts[i] += "\"";
                         }
                     }
                     result = $"\t[{parts[0]}]={parts[1]},";
+
+                }
+                else if(line.StartsWith('}') && line.EndsWith(';'))
+                {
+
+                }
+                else
+                {
 
                 }
                 if (result.Length > 0)
